@@ -4,6 +4,9 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.ktx.get
@@ -11,18 +14,39 @@ import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import com.google.samples.quickstart.config.R
 import com.google.samples.quickstart.config.databinding.ActivityMainBinding
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var remoteConfig: FirebaseRemoteConfig
     private lateinit var binding: ActivityMainBinding
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        firebaseAnalytics = Firebase.analytics
 
-        binding.fetchButton.setOnClickListener { fetchWelcome() }
+
+
+        binding.fetchButton.setOnClickListener {
+            firebaseAnalytics.logEvent("click_remote",null)
+            //fetchWelcome()
+        }
+        binding.button.setOnClickListener {
+            val bundle = Bundle()
+            bundle.putString("test_event","clicked")
+            firebaseAnalytics.logEvent("click_testEvent",bundle)
+        }
+        FirebaseInstallations.getInstance().getToken(true)
+            .addOnCompleteListener {task->
+                if (task.isSuccessful){
+                    Log.d("Installations", "Installation auth token: " + task.result?.token)
+                }else{
+                    Log.e("Installations", "Unable to get Installation auth token")
+                }
+            }
 
         // Get Remote Config instance.
         // [START get_remote_config_instance]
@@ -34,7 +58,7 @@ class MainActivity : AppCompatActivity() {
         // Setting to set the minimum fetch interval.
         // [START enable_dev_mode]
         val configSettings = remoteConfigSettings {
-            minimumFetchIntervalInSeconds = 3600
+            minimumFetchIntervalInSeconds = 180
         }
         remoteConfig.setConfigSettingsAsync(configSettings)
         // [END enable_dev_mode]
@@ -88,7 +112,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
 
-        private const val TAG = "MainActivity"
+        private const val TAG = "Remotetest"
 
         // Remote Config keys
         private const val LOADING_PHRASE_CONFIG_KEY = "loading_phrase"
